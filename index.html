@@ -97,6 +97,60 @@ body{font-family:'Microsoft JhengHei','PingFang TC',sans-serif;background:#0f172
 #radar-chart-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
 #radar-score{font-size:1rem;color:rgba(255,255,255,.6);margin-top:10px;text-align:center}
 #radar-msg{font-size:.85rem;color:#a5b4fc;text-align:center;margin-top:6px;font-style:italic}
+
+/* ===== RESPONSIVE ===== */
+/* Fluid type */
+.shdr{font-size:clamp(1.3rem,3.5vw,2rem)}
+.stitle h1{font-size:clamp(1.6rem,5vw,3rem)!important}
+.stitle p{font-size:clamp(.9rem,2vw,1.15rem)!important}
+.card p,.card li,.ilist li,.case p,.discuss .q{font-size:clamp(.78rem,1.5vw,.9rem)}
+
+/* Tablet ≤ 900px */
+@media(max-width:900px){
+  #slide{padding:28px 56px}
+  /* era slider: stack vertically */
+  #era-wrap{grid-template-columns:1fr;height:auto}
+  #era-ctrl{position:static}
+  #era-text{max-height:45vh}
+  /* radar: stack vertically */
+  #radar-wrap{grid-template-columns:1fr;height:auto}
+  #radar-ctrl{max-height:40vh;overflow-y:auto}
+  #radar-chart-wrap canvas{max-width:320px;max-height:320px}
+  /* 3-col cards → 2-col */
+  .cards[style*="repeat(3"]{grid-template-columns:1fr 1fr!important}
+  .cards[style*="repeat(6"]{grid-template-columns:1fr 1fr!important}
+}
+
+/* Mobile ≤ 600px */
+@media(max-width:600px){
+  #slide{padding:14px 44px}
+  .nav{width:34px;height:60px;font-size:1.6rem;border-radius:8px}
+  #prev{left:4px}#next{right:4px}
+  #ctr{font-size:.68rem;bottom:6px}
+  /* all card grids → 1-col */
+  .cards{grid-template-columns:1fr!important}
+  /* era & radar */
+  #era-text{max-height:38vh}
+  #era-pct{font-size:1.4rem}
+  #radar-chart-wrap canvas{max-width:260px;max-height:260px}
+  .r-item{margin-bottom:10px}
+  /* wordcloud */
+  #wc-wrap{height:calc(100vh - 160px)}
+  #wc-input{font-size:.88rem;padding:8px 12px}
+  #wc-btn{padding:8px 14px;font-size:.82rem}
+  /* title slide */
+  .stitle{padding:10px 0}
+  /* case/discuss boxes */
+  .case,.discuss{padding:14px 16px}
+}
+
+/* Very small ≤ 400px */
+@media(max-width:400px){
+  #slide{padding:10px 38px}
+  .nav{width:28px;height:50px;font-size:1.3rem}
+  #prev{left:2px}#next{right:2px}
+  .shdr{font-size:1.15rem}
+}
 </style>
 </head>
 <body>
@@ -1333,6 +1387,14 @@ function go(d) {
 
 slideEl.style.transition='opacity .25s,transform .25s';
 renderSlide(0);
+
+// ── Touch swipe ─────────────────────────────────────────────────
+let _tx=0;
+document.addEventListener('touchstart',e=>{_tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-_tx;
+  if(Math.abs(dx)>50){go(dx<0?1:-1);}
+},{passive:true});
 </script>
 </body>
 </html>
