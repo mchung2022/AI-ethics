@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 的素養與倫理規範</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -111,19 +109,7 @@ body{font-family:'Microsoft JhengHei','PingFang TC',sans-serif;background:#0f172
 </div>
 
 <script>
-// ── Firebase config (TODO: replace with your project's config) ──
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-try {
-  firebase.initializeApp(firebaseConfig);
-  window.db = firebase.firestore();
-} catch(e) { window.db = null; }
+// ── 本機文字雲（無需後端） ──
 
 // ── Slide data ──────────────────────────────────────────────────
 // type: title | content | case | discuss | grid | wordcloud | slider | radar
@@ -1113,7 +1099,7 @@ function buildWordCloud(s) {
     <h1 class="shdr" style="font-size:1.6rem;margin-bottom:8px">💬 ${s.title}</h1>
     <p style="font-size:.85rem;color:rgba(255,255,255,.45);margin-bottom:10px">${s.sub||''}</p>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <input id="wc-input" placeholder="輸入你的理由（可多次輸入）" maxlength="30"/>
+      <input id="wc-input" placeholder="輸入你的理由（可多次輸入）" maxlength="30" onkeydown="if(event.key==='Enter')wcSubmit()"/>
       <button id="wc-btn" onclick="wcSubmit()">送出</button>
     </div>
     <div id="wc-status">等待輸入…</div>
@@ -1122,25 +1108,11 @@ function buildWordCloud(s) {
 }
 
 let wcWords = {};
-let wcUnsub = null;
 
 function initWordCloud() {
-  if (!window.db) {
-    document.getElementById('wc-status').textContent = '⚠️ Firebase 尚未設定，請填入 firebaseConfig';
-    return;
-  }
-  if (wcUnsub) wcUnsub();
-  wcUnsub = db.collection('wordcloud_words').onSnapshot(snap => {
-    wcWords = {};
-    snap.forEach(doc => {
-      const w = (doc.data().word||'').trim();
-      if (w) wcWords[w] = (wcWords[w]||0) + 1;
-    });
-    drawWC();
-    const total = snap.size;
-    const el = document.getElementById('wc-status');
-    if (el) el.textContent = `目前共 ${total} 筆回應`;
-  });
+  const el = document.getElementById('wc-status');
+  if (el) el.textContent = `目前共 ${Object.values(wcWords).reduce((a,b)=>a+b,0)} 筆回應`;
+  drawWC();
 }
 
 function drawWC() {
@@ -1164,10 +1136,12 @@ function wcSubmit() {
   if (!inp) return;
   const word = inp.value.trim();
   if (!word) return;
-  if (!window.db) { alert('Firebase 尚未設定'); return; }
-  db.collection('wordcloud_words').add({ word, ts: firebase.firestore.FieldValue.serverTimestamp() })
-    .then(() => { inp.value = ''; })
-    .catch(e => alert('寫入失敗：' + e.message));
+  wcWords[word] = (wcWords[word] || 0) + 1;
+  inp.value = '';
+  const total = Object.values(wcWords).reduce((a,b)=>a+b,0);
+  const el = document.getElementById('wc-status');
+  if (el) el.textContent = `目前共 ${total} 筆回應`;
+  drawWC();
 }
 
 document.addEventListener('keydown', e => {
@@ -1344,7 +1318,6 @@ function go(d) {
   slideEl.style.opacity='0';
   slideEl.style.transform='translateX('+(d>0?'30px':'-30px')+')';
   setTimeout(()=>{
-    if (wcUnsub && S[cur].type!=='wordcloud') { wcUnsub(); wcUnsub=null; }
     cur = next;
     renderSlide(cur);
     slideEl.style.transition='none';
